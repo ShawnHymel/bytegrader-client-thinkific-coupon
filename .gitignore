@@ -1,0 +1,3 @@
+# Local env files with real secrets — never commit these
+deploy/.env
+deploy/coupons.env

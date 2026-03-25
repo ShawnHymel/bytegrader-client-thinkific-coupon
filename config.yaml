@@ -1,0 +1,69 @@
+# =============================================================================
+# ByteGrader Thinkific Client Configuration
+# =============================================================================
+# 1. Edit this file
+# 2. Run: sudo bash install.sh
+# All settings live here — no interactive prompts.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ByteGrader
+# -----------------------------------------------------------------------------
+
+# Absolute path to the bytegrader repo on this server.
+# install.sh will call bytegrader/install.sh before deploying this client.
+bytegrader_path: /home/bytegrader/bytegrader
+
+# Must match one of the api_keys entries in bytegrader/config.yaml
+bytegrader_api_key: your-api-key-here
+
+# -----------------------------------------------------------------------------
+# Domain Settings
+# -----------------------------------------------------------------------------
+
+# Root domain (e.g. bytegrader.com)
+domain: my-domain.com
+
+# Subdomain for this client (e.g. portal.esp32-iot)
+# Client will be reachable at https://<subdomain>.<domain>/
+subdomain: portal.my-course-name
+
+# Email for Let's Encrypt SSL certificate notifications
+ssl_email: you@example.com
+
+# -----------------------------------------------------------------------------
+# Email (Resend)
+# -----------------------------------------------------------------------------
+
+resend_api_key: re_your_resend_api_key
+resend_from: "ByteGrader <grader@my-domain.com>"
+
+# -----------------------------------------------------------------------------
+# Grading
+# -----------------------------------------------------------------------------
+
+# Minimum score (0-100) required to trigger the coupon email
+passing_score: 80.0
+
+# Direct Thinkific checkout URL for Course B
+course_b_url: https://your-school.thinkific.com/enroll/course-b
+
+# -----------------------------------------------------------------------------
+# Coupons
+# -----------------------------------------------------------------------------
+# One coupon code per assignment ID.
+# Generate unlimited-use 100% off coupons in Thinkific and paste the codes here.
+# If a coupon is missing for an assignment, the results email is sent without one.
+coupons:
+  hw1: COUPON-CODE-HERE
+  # hw2: ANOTHER-CODE-HERE
+
+# -----------------------------------------------------------------------------
+# Server Settings (defaults are fine for most deployments)
+# -----------------------------------------------------------------------------
+
+# Port the client listens on inside Docker
+client_port: 8081
+
+# Directory where deployed app files live
+app_dir: /home/bytegrader/thinkific-client

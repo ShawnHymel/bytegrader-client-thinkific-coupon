@@ -1,0 +1,47 @@
+services:
+  thinkific-client:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: thinkific-client
+
+    ports:
+      - "${BIND_ADDRESS}:${CLIENT_PORT}:${CLIENT_PORT}"
+
+    environment:
+      - CLIENT_PORT=${CLIENT_PORT}
+      - BYTEGRADER_URL=${BYTEGRADER_URL}
+      - BYTEGRADER_API_KEY=${BYTEGRADER_API_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM=${RESEND_FROM}
+      - PASSING_SCORE=${PASSING_SCORE}
+      - COURSE_B_URL=${COURSE_B_URL}
+
+    env_file:
+      - coupons.env
+
+    restart: unless-stopped
+
+    networks:
+      - bytegrader-net
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${CLIENT_PORT}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.05'
+
+networks:
+  bytegrader-net:
+    external: true
+    name: bytegrader-net
