@@ -144,6 +144,7 @@
 (function () {
   // ── URL params ─────────────────────────────────────────────────────
   const params     = new URLSearchParams(window.location.search);
+  const email      = params.get('email')      || '';
   const firstName  = params.get('first_name') || '';
   const assignment = params.get('assignment') || '';
 
@@ -240,6 +241,7 @@
 
     const body = new FormData();
     body.append('file', selectedFile);
+    body.append('email', email);
 
     fetch(`/submit?assignment=${encodeURIComponent(assignment)}`, { method: 'POST', body })
       .then(r => {
@@ -268,15 +270,17 @@
       .then(r => r.json())
       .then(data => {
         switch (data.status) {
-          case 'pending':
-          case 'running':
+          case 'queued':
+            showStatus('Queued for grading\u2026' + elapsed(), 'info');
+            break;
+          case 'processing':
             showStatus('Grading in progress\u2026' + elapsed(), 'info');
             break;
-          case 'complete':
+          case 'completed':
             stopPolling();
             showResult(data);
             break;
-          case 'error':
+          case 'failed':
             stopPolling();
             showStatus('Grading error: ' + escHtml(data.feedback || 'unknown error'), 'error');
             resubmitSection.classList.remove('hidden');

@@ -6,7 +6,10 @@ import (
 	"net/http"
 )
 
-var config *Config
+var (
+	config *Config
+	bg     *bgClient
+)
 
 func main() {
 	var err error
@@ -14,6 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("configuration error: %v", err)
 	}
+
+	bg = newBGClient(config.BytegraderURL, config.BytegraderAPIKey)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
