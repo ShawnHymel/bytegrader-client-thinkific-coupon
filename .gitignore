@@ -1,3 +1,6 @@
 # Local env files with real secrets — never commit these
-deploy/.env
-deploy/coupons.env
+.env
+coupons.env
+
+# Go build artifacts
+thinkific-client

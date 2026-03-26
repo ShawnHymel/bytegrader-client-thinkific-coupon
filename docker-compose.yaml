@@ -1,8 +1,7 @@
 services:
   thinkific-client:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+      context: .
     container_name: thinkific-client
 
     ports:

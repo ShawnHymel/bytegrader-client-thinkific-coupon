@@ -118,20 +118,12 @@ RESEND_FROM=$(cfg "resend_from");       [[ -z "$RESEND_FROM" ]]    && die "resen
 PASSING_SCORE=$(cfg "passing_score");   PASSING_SCORE="${PASSING_SCORE:-80.0}"
 COURSE_B_URL=$(cfg "course_b_url");     [[ -z "$COURSE_B_URL" ]]   && die "course_b_url is required in config.yaml"
 CLIENT_PORT=$(cfg "client_port");       CLIENT_PORT="${CLIENT_PORT:-8081}"
-APP_DIR=$(cfg "app_dir");               APP_DIR="${APP_DIR:-/home/bytegrader/thinkific-client}"
 FULL_DOMAIN="${SUBDOMAIN}.${DOMAIN}"
 
-# Read coupons map into COUPONS_* env vars
-while IFS='=' read -r key val; do
-  [[ -z "$key" ]] && continue
-  upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
-  export "COUPONS_${upper_key}=${val}"
-done < <(cfg "coupons")
-
-info "Domain:       $FULL_DOMAIN"
-info "App dir:      $APP_DIR"
-info "Client port:  $CLIENT_PORT"
-info "ByteGrader:   $BYTEGRADER_PATH"
+info "Domain:      $FULL_DOMAIN"
+info "Repo dir:    $SCRIPT_DIR"
+info "Client port: $CLIENT_PORT"
+info "ByteGrader:  $BYTEGRADER_PATH"
 
 # ── Step 3: Deploy ByteGrader ─────────────────────────────────────────────────
 if [[ "$SKIP_BYTEGRADER" == true ]]; then
@@ -148,19 +140,8 @@ fi
 # ── Step 4: Deploy client ─────────────────────────────────────────────────────
 header "Step 4 — Deploying Thinkific Client"
 
-mkdir -p "$APP_DIR"
-
-if [[ "$SKIP_BUILD" == false ]]; then
-  info "Copying source files..."
-  mkdir -p "$APP_DIR/server"
-  cp "$SCRIPT_DIR/server"/*.go "$APP_DIR/server/"
-  cp "$SCRIPT_DIR/server/go.mod" "$APP_DIR/server/"
-  # go.sum may not exist yet on first build — skip if absent
-  [[ -f "$SCRIPT_DIR/server/go.sum" ]] && cp "$SCRIPT_DIR/server/go.sum" "$APP_DIR/server/"
-  success "Copied server source files"
-
-  # Write .env file for docker compose (standard vars)
-  cat > "$APP_DIR/.env" <<EOF
+# Write .env for docker compose (standard vars)
+cat > "$SCRIPT_DIR/.env" <<EOF
 BIND_ADDRESS=${BIND_ADDRESS}
 CLIENT_PORT=${CLIENT_PORT}
 BYTEGRADER_URL=http://bytegrader:8080
@@ -170,34 +151,27 @@ RESEND_FROM=${RESEND_FROM}
 PASSING_SCORE=${PASSING_SCORE}
 COURSE_B_URL=${COURSE_B_URL}
 EOF
-  chmod 600 "$APP_DIR/.env"
-  success "Written .env file"
+chmod 600 "$SCRIPT_DIR/.env"
+success "Written .env"
 
-  # Write coupons.env file (loaded separately so COUPONS_* vars are clearly isolated)
-  > "$APP_DIR/coupons.env"
-  while IFS='=' read -r key val; do
-    [[ -z "$key" ]] && continue
-    upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
-    echo "COUPONS_${upper_key}=${val}" >> "$APP_DIR/coupons.env"
-  done < <(cfg "coupons")
-  chmod 600 "$APP_DIR/coupons.env"
-  success "Written coupons.env file"
+# Write coupons.env (loaded via env_file in docker-compose.yaml)
+> "$SCRIPT_DIR/coupons.env"
+while IFS='=' read -r key val; do
+  [[ -z "$key" ]] && continue
+  upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
+  echo "COUPONS_${upper_key}=${val}" >> "$SCRIPT_DIR/coupons.env"
+done < <(cfg "coupons")
+chmod 600 "$SCRIPT_DIR/coupons.env"
+success "Written coupons.env"
 
-  cp "$SCRIPT_DIR/deploy/docker-compose.yaml" "$APP_DIR/docker-compose.yaml"
-  success "Copied docker-compose.yaml"
-
-  cp "$SCRIPT_DIR/deploy/Dockerfile" "$APP_DIR/"
-  success "Copied Dockerfile"
-
-  cd "$APP_DIR"
+if [[ "$SKIP_BUILD" == false ]]; then
   docker compose down 2>/dev/null || true
   docker compose build --no-cache
   docker compose up -d
-  cd "$SCRIPT_DIR"
   success "Client container built and started"
 else
   warn "--skip-build: bringing up existing container"
-  cd "$APP_DIR" && docker compose up -d 2>/dev/null || true
+  docker compose up -d 2>/dev/null || true
 fi
 
 # Wait for healthy
@@ -208,7 +182,7 @@ for i in $(seq 1 30); do
     break
   fi
   sleep 2
-  [[ $i -eq 30 ]] && die "Client did not become healthy. Check: cd $APP_DIR && docker compose logs"
+  [[ $i -eq 30 ]] && die "Client did not become healthy. Check: cd $SCRIPT_DIR && docker compose logs"
 done
 
 # ── Step 5: nginx ─────────────────────────────────────────────────────────────
@@ -348,6 +322,6 @@ else
 fi
 
 echo ""
-echo -e "  ${BOLD}Logs:${NC}  cd $APP_DIR && docker compose logs -f"
+echo -e "  ${BOLD}Logs:${NC}  cd $SCRIPT_DIR && docker compose logs -f"
 echo ""
 success "Thinkific client is live!"

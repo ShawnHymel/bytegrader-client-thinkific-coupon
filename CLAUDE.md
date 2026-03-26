@@ -160,24 +160,26 @@ Both require header: X-API-Key: {BYTEGRADER_API_KEY}
 
 ```
 bytegrader-client-thinkific-coupon/
-├── server/
-│    ├── main.go           — entry point, wires everything together
-│    ├── config.go         — loads env vars, fails fast if required vars missing
-│    ├── handlers.go       — HTTP handlers for all endpoints
-│    ├── bytegrader.go     — ByteGrader API client
-│    ├── email.go          — Resend email sending
-│    └── go.mod
+├── main.go               — entry point, wires everything together
+├── config.go             — loads env vars, fails fast if required vars missing
+├── handlers.go           — HTTP handlers for all endpoints
+├── bytegrader.go         — ByteGrader API client (Feature 3)
+├── email.go              — Resend email sending (Feature 6)
+├── go.mod
 ├── web/
-│    └── portal.html       — submission portal UI (embedded via go:embed)
-├── deploy/
-│    ├── Dockerfile        — multi-stage build (no Go required on host)
-│    ├── docker-compose.yaml
-│    ├── .env.example      — copy to .env for local testing
-│    └── coupons.env.example
+│    └── portal.html      — submission portal UI, embedded via go:embed (Feature 2)
+├── Dockerfile             — multi-stage build (no Go required on host)
+├── docker-compose.yaml
+├── .env                   — written by install.sh, gitignored
+├── .env.example           — copy to .env for local testing
+├── coupons.env            — written by install.sh, gitignored
+├── coupons.env.example
 ├── config.yaml            — all configuration (edited by operator before install)
 ├── install.sh             — deploys client AND calls bytegrader/install.sh
-└── .gitignore             — excludes deploy/.env and deploy/coupons.env
+└── .gitignore
 ```
+
+**Deployment model:** The repo itself is the deployment directory. `install.sh` writes `.env` and `coupons.env` from `config.yaml` and runs `docker compose` from the repo root. No source file copying.
 
 ## Feature Checklist
 

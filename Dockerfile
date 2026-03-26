@@ -3,10 +3,10 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
-COPY server/go.mod ./
+COPY go.mod ./
 RUN go mod download
 
-COPY server/*.go ./
+COPY *.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -a -installsuffix cgo -o thinkific-client .

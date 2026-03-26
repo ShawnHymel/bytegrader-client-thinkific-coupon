@@ -64,6 +64,3 @@ coupons:
 
 # Port the client listens on inside Docker
 client_port: 8081
-
-# Directory where deployed app files live
-app_dir: /home/bytegrader/thinkific-client
