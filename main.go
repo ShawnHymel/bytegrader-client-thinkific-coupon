@@ -17,6 +17,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/portal", portalHandler)
 
 	addr := fmt.Sprintf(":%s", config.ClientPort)
 	log.Printf("starting server on %s", addr)

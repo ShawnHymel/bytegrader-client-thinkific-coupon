@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment Submission</title>
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* ── Card ───────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .card-header { margin-bottom: 1.5rem; }
+    .card-header h1 { font-size: 1.25rem; font-weight: 600; }
+    .card-header p  { color: #666; margin-top: 0.25rem; font-size: 0.9rem; }
+
+    /* ── Upload zone ────────────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed #c0c8d8;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover,
+    .upload-zone.dragover { border-color: #4a7cf7; background: #f0f4ff; }
+    .upload-zone p          { color: #555; font-size: 0.9rem; margin-top: 0.5rem; }
+    .upload-zone .file-name { color: #4a7cf7; font-weight: 500; margin-top: 0.5rem; font-size: 0.85rem; }
+
+    /* ── Buttons ────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.4rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:disabled                  { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary                   { background: #4a7cf7; color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+    .btn-secondary                 { background: #e8ecf4; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background: #d8deee; }
+
+    .actions { margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; }
+    .actions .hint { font-size: 0.85rem; color: #888; }
+
+    /* ── Status box ─────────────────────────────────────────────────── */
+    .status-box {
+      margin-top: 1.25rem;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .status-box.info    { background: #f0f4ff; color: #2a4db5; }
+    .status-box.success { background: #edfaf3; color: #1a6b40; }
+    .status-box.error   { background: #fff0f0; color: #b52a2a; }
+    .status-box.neutral { background: #f5f7fa; color: #333;    }
+
+    /* ── Result ─────────────────────────────────────────────────────── */
+    .score    { font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0; }
+    .feedback {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: #fff;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+      color: #333;
+    }
+
+    /* ── Attribution ────────────────────────────────────────────────── */
+    .attribution {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #bbb;
+    }
+    .attribution a { color: #bbb; text-decoration: none; }
+    .attribution a:hover { text-decoration: underline; }
+
+    /* ── Utility ────────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <h1 id="heading">Assignment Submission</h1>
+    <p id="subheading"></p>
+  </div>
+
+  <div id="upload-section">
+    <div class="upload-zone" id="drop-zone">
+      <p>Drag &amp; drop your ZIP file here, or click to browse</p>
+      <p class="file-name hidden" id="file-name"></p>
+      <input type="file" id="file-input" accept=".zip" style="display:none">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="submit-btn" disabled>Submit for Grading</button>
+      <span class="hint" id="file-hint">No file selected</span>
+    </div>
+  </div>
+
+  <div id="status-box" class="status-box hidden"></div>
+
+  <div id="resubmit-section" class="hidden" style="margin-top:1rem;">
+    <button class="btn btn-secondary" id="resubmit-btn">Submit Again</button>
+  </div>
+
+  <div class="attribution">
+    Powered by <a href="https://github.com/ShawnHymel/bytegrader" target="_blank">ByteGrader</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ── URL params ─────────────────────────────────────────────────────
+  const params     = new URLSearchParams(window.location.search);
+  const firstName  = params.get('first_name') || '';
+  const assignment = params.get('assignment') || '';
+
+  if (firstName) {
+    document.getElementById('heading').textContent = `Hi ${firstName}, submit your assignment`;
+  }
+  if (assignment) {
+    document.getElementById('subheading').textContent = `Assignment: ${assignment}`;
+  }
+
+  // ── State ──────────────────────────────────────────────────────────
+  let selectedFile = null;
+  let jobId        = null;
+  let pollTimer    = null;
+  let pollStart    = null;
+
+  // ── Elements ───────────────────────────────────────────────────────
+  const dropZone        = document.getElementById('drop-zone');
+  const fileInput       = document.getElementById('file-input');
+  const fileNameEl      = document.getElementById('file-name');
+  const fileHint        = document.getElementById('file-hint');
+  const submitBtn       = document.getElementById('submit-btn');
+  const uploadSection   = document.getElementById('upload-section');
+  const statusBox       = document.getElementById('status-box');
+  const resubmitSection = document.getElementById('resubmit-section');
+  const resubmitBtn     = document.getElementById('resubmit-btn');
+
+  // ── Status helpers ─────────────────────────────────────────────────
+  function showStatus(html, type) {
+    statusBox.innerHTML = html;
+    statusBox.className = `status-box ${type}`;
+    statusBox.classList.remove('hidden');
+  }
+
+  function elapsed() {
+    if (!pollStart) return '';
+    const s = Math.floor((Date.now() - pollStart) / 1000);
+    return ` <small style="color:inherit;opacity:0.7;">(${s}s)</small>`;
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function resetForm() {
+    stopPolling();
+    selectedFile = null;
+    jobId = null;
+    fileInput.value = '';
+    fileNameEl.textContent = '';
+    fileNameEl.classList.add('hidden');
+    fileHint.textContent = 'No file selected';
+    submitBtn.disabled = true;
+    uploadSection.classList.remove('hidden');
+    resubmitSection.classList.add('hidden');
+    statusBox.classList.add('hidden');
+  }
+
+  // ── File selection ─────────────────────────────────────────────────
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) selectFile(fileInput.files[0]);
+  });
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+  });
+
+  function selectFile(file) {
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      showStatus('Please select a ZIP file (.zip).', 'error');
+      return;
+    }
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileNameEl.classList.remove('hidden');
+    fileHint.textContent = '';
+    submitBtn.disabled = false;
+    statusBox.classList.add('hidden');
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────
+  submitBtn.addEventListener('click', () => {
+    if (!selectedFile) return;
+
+    submitBtn.disabled = true;
+    showStatus('Uploading\u2026', 'info');
+
+    const body = new FormData();
+    body.append('file', selectedFile);
+
+    fetch(`/submit?assignment=${encodeURIComponent(assignment)}`, { method: 'POST', body })
+      .then(r => {
+        if (!r.ok) return r.text().then(t => {
+          try { throw new Error(JSON.parse(t).error || r.statusText); } catch { throw new Error(t.trim() || r.statusText); }
+        });
+        return r.json();
+      })
+      .then(data => {
+        if (!data.job_id) throw new Error('No job_id in response');
+        jobId     = data.job_id;
+        pollStart = Date.now();
+        showStatus('Uploaded! Grading in progress\u2026' + elapsed(), 'info');
+        poll();
+        pollTimer = setInterval(poll, 3000);
+      })
+      .catch(err => {
+        showStatus('Upload failed: ' + escHtml(err.message), 'error');
+        submitBtn.disabled = false;
+      });
+  });
+
+  // ── Polling ────────────────────────────────────────────────────────
+  function poll() {
+    fetch(`/status/${encodeURIComponent(jobId)}`)
+      .then(r => r.json())
+      .then(data => {
+        switch (data.status) {
+          case 'pending':
+          case 'running':
+            showStatus('Grading in progress\u2026' + elapsed(), 'info');
+            break;
+          case 'complete':
+            stopPolling();
+            showResult(data);
+            break;
+          case 'error':
+            stopPolling();
+            showStatus('Grading error: ' + escHtml(data.feedback || 'unknown error'), 'error');
+            resubmitSection.classList.remove('hidden');
+            break;
+          default:
+            showStatus('Unknown status: ' + escHtml(data.status) + elapsed(), 'info');
+        }
+      })
+      .catch(() => {
+        showStatus('Connection error, retrying\u2026' + elapsed(), 'info');
+      });
+  }
+
+  // ── Result ─────────────────────────────────────────────────────────
+  function showResult(data) {
+    const score    = data.score != null ? data.score : '—';
+    const feedback = data.feedback || '';
+
+    let html = `<strong>Score:</strong> <span class="score">${escHtml(String(score))}%</span>`;
+    if (feedback) {
+      html += `<div class="feedback">${escHtml(feedback)}</div>`;
+    }
+
+    showStatus(html, 'neutral');
+    resubmitSection.classList.remove('hidden');
+
+    // Ask server if a coupon was sent; update display if so.
+    fetch('/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: jobId }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(resp => {
+        if (resp && resp.coupon_sent) {
+          showStatus(
+            html + '<br><br><strong>You passed!</strong> Check your email for your Course B access code.',
+            'success'
+          );
+        }
+      })
+      .catch(() => { /* /complete not yet available — leave result display as-is */ });
+  }
+
+  // ── Resubmit ───────────────────────────────────────────────────────
+  resubmitBtn.addEventListener('click', resetForm);
+
+  // ── Utility ────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+})();
+</script>
+</body>
+</html>
